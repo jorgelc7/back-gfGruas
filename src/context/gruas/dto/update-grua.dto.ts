@@ -17,4 +17,9 @@ export class UpdateGruaDto {
   @IsNotEmpty()
   @IsEnum(['ARRIENDO', 'DISPONIBLE', 'MANTENIMIENTO'])
   estado: string;
+
+  @IsString()
+  @IsNotEmpty()
+  year: string;
+
 }

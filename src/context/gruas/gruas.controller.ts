@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus,Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus,Put, UsePipes, ValidationPipe } from '@nestjs/common';
 import { GruasService } from './gruas.service';
 import { CreateGruaDto } from './dto/create-grua.dto';
 import { UpdateGruaDto } from './dto/update-grua.dto';
@@ -28,19 +28,29 @@ export class GruasController {
       throw new HttpException('Error findAll controller Grua', HttpStatus.BAD_REQUEST);
     }
   }
-
+  @Get('findAllAvailable')
+  async findAllAvailable() {
+    try {
+      return await this.gruasService.findAllAvailable();
+    } catch (error) {
+      console.log('Error controller findAllAvailable a grua:', error);
+      throw new HttpException('Error findAllAvailable controller Grua', HttpStatus.BAD_REQUEST);
+    }
+  }
   @Get(':id')
   findOne(@Param('id') id: string) {
+    console.log("WEEWEWEWEEWEW")
     try {
       return this.gruasService.findOne(id);
       
     } catch (error) {
       console.log('Error controller findOne a grua:', error);
-      throw new HttpException('Error findOne controller Grua', HttpStatus.BAD_REQUEST);
+      throw new HttpException('Error findOne controller Gruatt', HttpStatus.BAD_REQUEST);
     }
   }
-
+  
   @Put(':id')
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   update(@Param('id') id: string, @Body() updateGruaDto: UpdateGruaDto) {
 
     try {

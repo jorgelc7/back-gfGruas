@@ -1,29 +1,32 @@
+import { MulterService } from './../../common/middleware/multer/multer.middleware';
 
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, Logger, Res, HttpStatus, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, Logger, Res, HttpStatus, Put, NotFoundException } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import * as bcryptjs from 'bcryptjs';
-
+import * as fs from 'fs';
+import * as path from 'path';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 @Controller('user')
 export class UserController {
 
   private readonly logger = new Logger(UserController.name);
 
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService) { }
 
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     try {
-      
+
       console.log('Incoming data from frontend:', createUserDto);
       const createUser = { ...createUserDto, userAt: 'ADMIN', estado_usuario: 1 };
       return this.userService.create(createUser);
     } catch (error) {
       console.log('Incoming data from frontend:', createUserDto);
-      
+
     }
   }
 
@@ -32,6 +35,19 @@ export class UserController {
   upload(@UploadedFile() file: Express.Multer.File) {
     console.log(file);
     return { filename: file.filename };
+  }
+
+  @Post('verify-password/:id')
+  async verifyPassword(
+    @Param('id') userId: string,
+    @Body('password') password: string
+  ): Promise<{ valid: boolean }> {
+    const isValid = await this.userService.verifyPassword(userId, password);
+    if (!isValid) {
+      console.log('La contraseña es incorrecta.', isValid);
+      throw new NotFoundException('La contraseña es incorrecta.');
+    }
+    return { valid: isValid };
   }
 
   @Get()
@@ -56,22 +72,75 @@ export class UserController {
     return this.userService.findOne(id); // No uses +id
   }
 
-  @Put(':id')
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Res() res: Response) { // Cambiado a string
+  @Patch('password/:id')
+  async updatePassword(
+    @Param('id') id: string,
+    @Body() updatePasswordDto: UpdatePasswordDto,
+    @Res() res: Response
+  ) {
     try {
-      console.log(updateUserDto);
-      const hashedPassword = await bcryptjs.hash(updateUserDto.clave_usuario, 10);
-      const updateDtoHashed = { ...updateUserDto, clave_usuario: hashedPassword };
-      const usuario = await this.userService.update(id, updateDtoHashed); // No uses +id
+      const updatedUser = await this.userService.updatePassword(id, updatePasswordDto);
       return res.status(HttpStatus.OK).json({
         success: true,
-        data: usuario,
+        message: 'Contraseña actualizada correctamente',
+        data: updatedUser,
       });
     } catch (error) {
-      this.logger.error(`Error al actualizar usuarios: ${error.message}`, error.stack);
+      console.error('Error capturado en el controlador:', error.message);
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         success: false,
-        message: 'Error interno del servidor',
+        message: error.message || 'Error interno del servidor',
+      });
+    }
+  }
+
+
+
+  @Put(':id')
+  @UseInterceptors(FileInterceptor('ImgUrl', new MulterService().getMulterOptions('./src/uploads/imgPerfil')))
+  async update(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+    @UploadedFile() file: Express.Multer.File,
+    @Res() res: Response
+  ) {
+    try {
+      console.log("Entrando al controlador...");
+
+      // Obtener el usuario actual para verificar si tiene una imagen anterior
+      const currentUser = await this.userService.findOne(id);
+      console.log("Usuario actual:", currentUser);
+
+      if (file) {
+        // Si el usuario tiene una imagen existente, eliminarla
+        if (currentUser.ImgUrl) {
+
+          console.log("djwkjlksjldks:", currentUser.ImgUrl);
+          const oldImagePath = path.resolve('src/uploads/imgPerfil', currentUser.ImgUrl);
+          console.log("Ruta de la imagen anterior:", oldImagePath);
+          if (fs.existsSync(oldImagePath)) {
+            fs.unlinkSync(oldImagePath); // Eliminar la imagen anterior
+            console.log(`Imagen anterior eliminada: ${oldImagePath}`);
+          }
+        }
+
+        // Agrega el nombre de archivo a updateUserDto
+        updateUserDto.ImgUrl = file.filename;
+      }
+
+      console.log("Datos recibidos para actualizar:", updateUserDto);
+
+      const updatedUser = await this.userService.update(id, updateUserDto);
+
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        data: updatedUser,
+      });
+    } catch (error) {
+      console.error('Error capturado en el controlador:', error.message);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: error.message || 'Error interno del servidor',
       });
     }
   }

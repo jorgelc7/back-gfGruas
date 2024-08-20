@@ -5,6 +5,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { IUsuario } from './entities/user.entity';
 import { IRolUsuario } from '../roles/entities/role.entity';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import * as bcryptjs from 'bcryptjs';
 
 @Injectable()
 export class UserService {
@@ -33,23 +35,66 @@ export class UserService {
   
 
   async findOneByEmail(email: string): Promise<IUsuario> {
-    return await this.usuarioModel.findOne({ email_usuario: email }).exec();
+    return (await this.usuarioModel.findOne({ email_usuario: email }).exec()).populate('id_rol');
   }
 
   async findOne(id: string): Promise<IUsuario> {
-    const user = await this.usuarioModel.findById(id).populate('rol').exec();
+    const user = await this.usuarioModel.findById(id).populate('id_rol').exec();
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
     return user;
   }
+  async verifyPassword(userId: string, providedPassword: string): Promise<boolean> {
+    const user = await this.usuarioModel.findById(userId).exec();
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+    
+    const isPasswordValid = await bcryptjs.compare(providedPassword, user.clave_usuario); // Suponiendo que usas bcrypt para encriptar contraseñas
+    return isPasswordValid;
+  }
+  
+
+  async updatePassword(id: string, updatePasswordDto: UpdatePasswordDto): Promise<IUsuario> {
+    try {
+      const user = await this.usuarioModel.findById(id);
+      if (!user) {
+        throw new NotFoundException('Usuario no encontrado');
+      }
+  
+      // Hash the new password before saving
+      const hashedPassword = await bcryptjs.hash(updatePasswordDto.clave_usuario, 10);
+      user.clave_usuario = hashedPassword;
+      return await user.save();
+    } catch (error) {
+      console.error('Error capturado en el servicio:', error.message);
+      throw new Error('Error al actualizar la contraseña');
+    }
+  }
+  
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<IUsuario> {
-    const updatedUser = await this.usuarioModel.findByIdAndUpdate(id, updateUserDto, { new: true }).exec();
-    if (!updatedUser) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+    try {
+      console.log("ID:", id);
+      console.log("DTO para actualizar:", updateUserDto);
+
+      const updatedUser = await this.usuarioModel.findByIdAndUpdate(
+        id, 
+        { $set: updateUserDto }, 
+        { new: true }
+      ).exec();
+
+      if (!updatedUser) {
+        throw new NotFoundException(`User with ID ${id} not found`);
+      }
+
+      console.log("Usuario actualizado:", updatedUser);
+      return updatedUser;
+    } catch (error) {
+      console.error("Error updating user:", error);
+      throw new Error("Error updating user");
     }
-    return updatedUser;
   }
 
   async remove(id: string): Promise<void> {
@@ -59,54 +104,3 @@ export class UserService {
     }
   }
 }
-
-
-// import { Injectable } from '@nestjs/common';
-// import { CreateUserDto } from './dto/create-user.dto';
-// import { UpdateUserDto } from './dto/update-user.dto';
-// import { Usuario } from './entities/user.entity';
-// import { InjectModel } from '@nestjs/sequelize';
-// import { RolUsuario } from '../roles/entities/role.entity';
-
-// @Injectable()
-// export class UserService {
-
-//   constructor(
-//     @InjectModel(Usuario) private usuarioModel: typeof Usuario,
-//     @InjectModel(RolUsuario) private rolModel: typeof RolUsuario
-//   ) {}
-
-//   create(createUserDto: CreateUserDto) {
-//     return this.usuarioModel.create(createUserDto);
-//   }
-
-//   async findAll() {
-//     return await this.usuarioModel.findAll(
-//       { include: [
-//           { model: this.rolModel },
-//         ]
-//       });
-//   }
-
-//   async findOneByEmail(email: string) {
-//     return await this.usuarioModel.findOne(
-//       { where: { email_usuario: email }});
-//   }
-
-//   async findOne(id: number) {
-//     return await this.usuarioModel.findOne(
-//       { where: { id: id },
-//         include: [
-//           { model: this.rolModel },
-//         ] 
-//       });
-//   }
-
-//   update(id: number, updateUserDto: UpdateUserDto) {
-//     return this.usuarioModel.update(updateUserDto, { where: { id: id } });
-//   }
-
-//   remove(id: number) {
-//     return this.usuarioModel.destroy({ where: { id: id } });
-//   }
-// }

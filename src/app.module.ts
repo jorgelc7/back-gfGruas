@@ -1,17 +1,20 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
- import { AuthModule } from './context/auth/auth.module';
- import { UserModule } from './context/user/user.module';
+import { AuthModule } from './context/auth/auth.module';
+import { UserModule } from './context/user/user.module';
 import { HttpLoggerMiddleware } from './common/utils/logs-config/logs.middleware';
- import { RolesModule } from './context/roles/roles.module';
-import { ConfigModule, ConfigService } from '@nestjs/config'; 
-import { FileUploadMiddleware } from './common/middleware/uploads.middleware';
+import { RolesModule } from './context/roles/roles.module';
+import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { databaseProviders } from './config/database.provider';
 import { LoggingMiddleware } from './common/middleware/consoleData/consoleData';
 import { GruasModule } from './context/gruas/gruas.module';
-
+import { MulterService } from './common/middleware/multer/multer.middleware';
+import { MulterModule } from './common/middleware/multer/multer.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
+import { CraneRequestsModule } from './context/Crane-Requests/crane-requests.module';
+import { VehicleIncidentPhotosModule } from './context/vehicle-incident-photos/vehicle-incident-photos.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ envFilePath: '.env' }),
@@ -19,18 +22,46 @@ import { GruasModule } from './context/gruas/gruas.module';
     RolesModule,
     UserModule,
     AuthModule,
-    GruasModule
+    GruasModule,
+    MulterModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'src', 'uploads', 'imgPerfil'), // Ruta completa donde se guardan las imágenes
+      serveRoot: '/imgPerfil', // Prefijo para acceder a los archivos
+    }),
+    CraneRequestsModule,
+    VehicleIncidentPhotosModule
   ],
   controllers: [AppController],
-  providers: [AppService,
-  ],
+  providers: [AppService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(LoggingMiddleware)
-    consumer.apply(HttpLoggerMiddleware).forRoutes('*');
-    consumer.apply(FileUploadMiddleware).forRoutes('upload');
+    consumer
+      .apply(LoggingMiddleware)
+      .forRoutes('*');
 
+    consumer
+      .apply(HttpLoggerMiddleware)
+      .forRoutes('*');
   }
-
 }
+
+
+/* 
+
+ServeStaticModule.forRoot([
+  {
+    rootPath: join(__dirname, '..', 'src', 'uploads', 'imgPerfil'),
+    serveRoot: '/imgPerfil',
+  },
+  {
+    rootPath: join(__dirname, '..', 'src', 'uploads', 'vehicleIncidentPhotos'),
+    serveRoot: '/vehicleIncidentPhotos',
+  },
+  {
+    rootPath: join(__dirname, '..', 'src', 'uploads', 'otherImages'),
+    serveRoot: '/otherImages',
+  },
+]),
+
+*/

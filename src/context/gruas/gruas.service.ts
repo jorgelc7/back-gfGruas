@@ -45,6 +45,15 @@ export class GruasService {
     }
   }
 
+  async findAllAvailable(): Promise<IGruas[]> {
+    try {
+      return await this.gruasModel.find({ estado: 'DISPONIBLE' }).exec();
+    } catch (error) {
+      console.log('Error service findAllAvailable grua', error);
+      throw new HttpException('Error fetching available gruass', HttpStatus.BAD_REQUEST);
+    }
+  }
+
   async update(id: string, updateGruaDto: UpdateGruaDto): Promise<IGruas> {
     try {
       return await this.gruasModel.findByIdAndUpdate(id, updateGruaDto, { new: true }).exec();
