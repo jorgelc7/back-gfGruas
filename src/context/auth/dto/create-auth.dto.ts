@@ -1,5 +1,5 @@
 import { Transform } from "class-transformer";
-import { IsEmail, IsInt, IsNumber, IsString, MinLength } from "class-validator";
+import { IsBoolean, IsEmail, IsInt, IsNumber, IsOptional, IsString, MinLength } from "class-validator";
 
 export class RegistroDto {
     @IsString()
@@ -16,11 +16,12 @@ export class RegistroDto {
     @MinLength(6)
     clave_usuario: string;
 
-    @IsInt()
-    estado_usuario: number;
+    @IsOptional()
+    @IsBoolean()
+    estado_usuario: boolean;
 
-    @IsString()
-    id_rol: string;
+    // @IsString()
+    // id_rol: string;
     @IsString()  // Asegúrate de usar la validación correcta si es string o número
     telefono: string;
 

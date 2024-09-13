@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsEnum, IsDateString, IsMongoId, IsNumber, ValidateNested } from 'class-validator';
+import { IsString, IsNotEmpty, IsEnum, IsDateString, IsMongoId, IsNumber, ValidateNested, IsDate, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class CoordenadasDto {
@@ -24,7 +24,7 @@ export class CreateCraneRequestsDto {
   @IsNotEmpty()
   driverId: string;
 
-  @IsEnum(['PENDIENTE', 'EN_CURSO', 'COMPLETADO', 'CANCELADO'])
+  @IsEnum(['PENDIENTE', 'EN_CURSO', 'EN_LUGAR', 'CON_CLIENTE_EN_CAMINO', 'COMPLETADO', 'CANCELADO'])
   @IsNotEmpty()
   estado: string;
 
@@ -52,4 +52,21 @@ export class CreateCraneRequestsDto {
   @IsString()
   @IsNotEmpty()
   total: string;
+
+  distancia: string;
+
+  tiempoLlegada: string;
+
+  @IsOptional()
+  @IsDate()
+  driverLlegoRecogerVehiculo: Date;
+
+  @IsOptional()
+  @IsDate()
+  driverComenzoViaje: Date;
+
+  @IsOptional()
+  @IsDate()
+  driverCompletoServicio: Date;
 }
+ 

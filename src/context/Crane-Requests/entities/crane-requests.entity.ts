@@ -1,6 +1,6 @@
 import { Schema, Document } from 'mongoose';
 
-export interface ITowingServices extends Document {
+export interface ICraneRequest extends Document {
     clienteId: Schema.Types.ObjectId;
     gruaId: Schema.Types.ObjectId;
     driverId: Schema.Types.ObjectId;
@@ -21,13 +21,15 @@ export interface ITowingServices extends Document {
     tiempoLlegada: string;
     direccionRecogida: string;
     direccionEntrega: string;
-
+    driverComenzoViaje: Date;
+    driverLlegoRecogerVehiculo: Date;
+    driverCompletoServicio: Date;
 }
 
-export const TowingServicesSchema = new Schema<ITowingServices>({
+export const CraneRequestSchema = new Schema<ICraneRequest>({
     clienteId: {
         type: Schema.Types.ObjectId,
-        ref: 'usuario',  // Asumiendo que tienes una colección de clientes
+        ref: 'Usuario',  // Asumiendo que tienes una colección de clientes
         required: true,
     },
     gruaId: {
@@ -43,7 +45,7 @@ export const TowingServicesSchema = new Schema<ITowingServices>({
     estado: {
         type: String,
         required: true,
-        enum: ['PENDIENTE', 'EN_CURSO', 'COMPLETADO', 'CANCELADO'],
+        enum: ['PENDIENTE', 'EN_CURSO', 'EN_LUGAR', 'CON_CLIENTE_EN_CAMINO', 'COMPLETADO', 'CANCELADO'],
         default: 'PENDIENTE',
     },
     coordenadasInicio: {
@@ -93,6 +95,18 @@ export const TowingServicesSchema = new Schema<ITowingServices>({
     direccionEntrega: {
         type: String,
         required: true,
+    },
+    driverComenzoViaje: {
+        type: Date,
+        default: null,
+      },
+    driverLlegoRecogerVehiculo: {
+        type: Date,
+        default: null,
+    },
+    driverCompletoServicio: {
+        type: Date,
+        default: null,
     },
     vehicleIncidentPhotosId: {
         type: Schema.Types.ObjectId,  // Asegúrate de que esté definido así

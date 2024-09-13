@@ -7,7 +7,7 @@ export interface IUsuario extends Document {
   telefono: number;
   email_usuario: string;
   clave_usuario: string;
-  estado_usuario: number;
+  estado_usuario: boolean;
   ImgUrl?: string; // Campo agregado para la foto de perfil
   id_rol: Schema.Types.ObjectId;
 }
@@ -28,8 +28,9 @@ export const UsuarioSchema = new Schema<IUsuario>({
     required: true,
   },
   estado_usuario: {
-    type: Number,
+    type: Boolean,
     required: true,
+    default: true,
   },
   email_usuario: {
     type: String,

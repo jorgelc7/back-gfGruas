@@ -1,5 +1,5 @@
 // update-user.dto.ts
-import { IsOptional, IsString, IsEmail } from 'class-validator';
+import { IsOptional, IsString, IsEmail, IsBoolean } from 'class-validator';
 
 export class UpdateUserDto {
   @IsOptional()
@@ -13,8 +13,8 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   clave_usuario?: string;
-
+  
   @IsOptional()
-  @IsString()
-  estado_usuario?: number;
+  @IsBoolean()
+  estado_usuario: boolean;
 }

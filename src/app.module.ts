@@ -15,6 +15,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { CraneRequestsModule } from './context/Crane-Requests/crane-requests.module';
 import { VehicleIncidentPhotosModule } from './context/vehicle-incident-photos/vehicle-incident-photos.module';
+import { GoogleMapsService } from './google-maps/google-maps.service';
 @Module({
   imports: [
     ConfigModule.forRoot({ envFilePath: '.env' }),
@@ -32,7 +33,7 @@ import { VehicleIncidentPhotosModule } from './context/vehicle-incident-photos/v
     VehicleIncidentPhotosModule
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, GoogleMapsService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
