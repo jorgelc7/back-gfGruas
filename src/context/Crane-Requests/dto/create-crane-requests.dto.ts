@@ -1,5 +1,6 @@
-import { IsString, IsNotEmpty, IsEnum, IsDateString, IsMongoId, IsNumber, ValidateNested, IsDate, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsEnum, IsMongoId, IsNumber, ValidateNested, IsDate, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
+import { EstadoCraneRequest } from '../entities/crane-requests.entity';
 
 class CoordenadasDto {
   @IsNumber()
@@ -11,22 +12,22 @@ class CoordenadasDto {
   longitud: number;
 }
 
+
 export class CreateCraneRequestsDto {
   @IsMongoId()
   @IsNotEmpty()
   clienteId: string;
 
   @IsMongoId()
-  @IsNotEmpty()
+  @IsOptional()
   gruaId: string;
 
   @IsMongoId()
-  @IsNotEmpty()
+  @IsOptional()
   driverId: string;
 
-  @IsEnum(['PENDIENTE', 'EN_CURSO', 'EN_LUGAR', 'CON_CLIENTE_EN_CAMINO', 'COMPLETADO', 'CANCELADO'])
-  @IsNotEmpty()
-  estado: string;
+  @IsEnum(EstadoCraneRequest)
+  estado: EstadoCraneRequest;
 
   @ValidateNested()
   @Type(() => CoordenadasDto)
@@ -38,21 +39,22 @@ export class CreateCraneRequestsDto {
   @IsNotEmpty()
   coordenadasDestino: CoordenadasDto;
 
-  @IsDateString()
-  @IsNotEmpty()
-  fechaInicio: string;
+  //@IsDate()
+  fechaInicio: Date;
 
-  @IsDateString()
-  fechaFin?: string;
+  //@IsDate()
+  fechaFin?: Date;
 
   @IsMongoId()
-  @IsNotEmpty()
+  @IsOptional()
   fotosId: string;
+
+  @IsNumber()
+  @IsNotEmpty()
+  total: number;
 
   @IsString()
   @IsNotEmpty()
-  total: string;
-
   distancia: string;
 
   tiempoLlegada: string;
@@ -68,5 +70,33 @@ export class CreateCraneRequestsDto {
   @IsOptional()
   @IsDate()
   driverCompletoServicio: Date;
+
+  // @IsString()
+  // @IsNotEmpty()
+  // tipoVehiculo: string;
+
+  @IsString()
+  @IsNotEmpty()
+  patente: string;
+
+  @IsString()
+  @IsNotEmpty()
+  tiempoRutaCliente: string;
+
+  @IsString()
+  @IsNotEmpty()
+  direccionRecogida
+
+  @IsString()
+  @IsNotEmpty()
+  direccionEntrega
+
+  @IsString()
+  @IsNotEmpty()
+  vehicleClientImageUrl
+
+  @IsOptional()
+  ubicacionActualDriver?
+
+
 }
- 

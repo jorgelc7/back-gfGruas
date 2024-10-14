@@ -20,8 +20,11 @@ export class RegistroDto {
     @IsBoolean()
     estado_usuario: boolean;
 
-    // @IsString()
-    // id_rol: string;
+    @IsOptional() // Hace el campo opcional
+@IsString()
+id_rol?: string;
+
+     
     @IsString()  // Asegúrate de usar la validación correcta si es string o número
     telefono: string;
 

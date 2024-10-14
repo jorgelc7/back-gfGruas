@@ -12,10 +12,15 @@ export class AuthController {
 
   @Post('register')
   register(@Body() registroDto: RegistroDto) {
-    return this.authService.register(registroDto);
+    const CLIENT_ROLE_ID = '66aab46c06f5ffc91bd87ef8'; // ID del rol de cliente
+    const id_rol = registroDto.id_rol || CLIENT_ROLE_ID; // Asigna cliente si no se proporciona
+    const createUser = { ...registroDto, id_rol };
+    return this.authService.register(createUser);
   }
+  
 
   @Post('login')
+
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }

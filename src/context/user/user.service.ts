@@ -64,7 +64,7 @@ export class UserService {
 
 
   async findOneByEmail(email: string): Promise<IUsuario> {
-    return (await this.usuarioModel.findOne({ email_usuario: email }).exec()).populate('id_rol');
+    return await this.usuarioModel.findOne({ email_usuario: email }).populate('id_rol').exec();
   }
 
   async findOne(id: string): Promise<IUsuario> {

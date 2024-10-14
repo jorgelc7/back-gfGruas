@@ -15,7 +15,8 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { CraneRequestsModule } from './context/Crane-Requests/crane-requests.module';
 import { VehicleIncidentPhotosModule } from './context/vehicle-incident-photos/vehicle-incident-photos.module';
-import { GoogleMapsService } from './google-maps/google-maps.service';
+import { MapsService } from './google-maps/google-maps.service';
+import { EvaluationModule } from './context/evaluation/evaluation.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ envFilePath: '.env' }),
@@ -25,6 +26,7 @@ import { GoogleMapsService } from './google-maps/google-maps.service';
     AuthModule,
     GruasModule,
     MulterModule,
+    EvaluationModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'src', 'uploads', 'imgPerfil'), // Ruta completa donde se guardan las imágenes
       serveRoot: '/imgPerfil', // Prefijo para acceder a los archivos
@@ -33,7 +35,7 @@ import { GoogleMapsService } from './google-maps/google-maps.service';
     VehicleIncidentPhotosModule
   ],
   controllers: [AppController],
-  providers: [AppService, GoogleMapsService],
+  providers: [AppService, MapsService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
@@ -46,23 +48,3 @@ export class AppModule implements NestModule {
       .forRoutes('*');
   }
 }
-
-
-/* 
-
-ServeStaticModule.forRoot([
-  {
-    rootPath: join(__dirname, '..', 'src', 'uploads', 'imgPerfil'),
-    serveRoot: '/imgPerfil',
-  },
-  {
-    rootPath: join(__dirname, '..', 'src', 'uploads', 'vehicleIncidentPhotos'),
-    serveRoot: '/vehicleIncidentPhotos',
-  },
-  {
-    rootPath: join(__dirname, '..', 'src', 'uploads', 'otherImages'),
-    serveRoot: '/otherImages',
-  },
-]),
-
-*/

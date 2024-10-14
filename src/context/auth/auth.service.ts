@@ -28,6 +28,7 @@ export class AuthService {
 
   async login({ email_usuario, clave_usuario }: LoginDto) {
     const user = await this.userService.findOneByEmail(email_usuario);
+    console.log("user:isa ", user)
     if (!user) {
       throw new UnauthorizedException('El email no es correcto');
     }
@@ -41,7 +42,6 @@ export class AuthService {
       email: user.email_usuario,
       usuario: user.nombre_usuario,
       rol: user.id_rol,
-      nombreRol: user.id_rol['nombre']
     }
     console.log("REsputes al fornt: ", payload)
     const userToken = await this.jwtService.signAsync(payload)

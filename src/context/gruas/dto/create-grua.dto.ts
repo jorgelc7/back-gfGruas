@@ -13,9 +13,10 @@ export class CreateGruaDto {
   @IsNotEmpty()
   modelo: string;
 
-  @IsNumber()
-  @Min(1900)
-  @Max(new Date().getFullYear())
+  // @IsNumber()
+  // @Min(1900)
+  // @Max(new Date().getFullYear())
+  @IsNotEmpty()
   year: Date;
 
   @IsString()

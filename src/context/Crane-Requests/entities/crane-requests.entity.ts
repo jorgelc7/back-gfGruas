@@ -14,17 +14,36 @@ export interface ICraneRequest extends Document {
         latitud: number;
         longitud: number;
     };
-    total: string;
+    ubicacionActualDriver: {
+        latitud: number;
+        longitud: number;
+    };
+    total: number;
     fechaInicio: Date;
     fechaFin: Date;
     distancia: string;
+    tiempoRutaCliente: string;
     tiempoLlegada: string;
     direccionRecogida: string;
     direccionEntrega: string;
     driverComenzoViaje: Date;
     driverLlegoRecogerVehiculo: Date;
     driverCompletoServicio: Date;
+    // tipoVehiculo: string;
+    patente: string;
+    vehicleClientImageUrl: string;
+    evaluationId: Schema.Types.ObjectId;
 }
+
+export enum EstadoCraneRequest {
+    PENDIENTE = 'PENDIENTE',
+    EN_CURSO = 'EN_CURSO',
+    EN_LUGAR = 'EN_LUGAR',
+    CON_CLIENTE_EN_CAMINO = 'CON_CLIENTE_EN_CAMINO',
+    COMPLETADO = 'COMPLETADO',
+    CANCELADO = 'CANCELADO',
+}
+
 
 export const CraneRequestSchema = new Schema<ICraneRequest>({
     clienteId: {
@@ -45,9 +64,10 @@ export const CraneRequestSchema = new Schema<ICraneRequest>({
     estado: {
         type: String,
         required: true,
-        enum: ['PENDIENTE', 'EN_CURSO', 'EN_LUGAR', 'CON_CLIENTE_EN_CAMINO', 'COMPLETADO', 'CANCELADO'],
-        default: 'PENDIENTE',
+        enum: Object.values(EstadoCraneRequest),  // Usa los valores del enum
+        default: EstadoCraneRequest.PENDIENTE,
     },
+
     coordenadasInicio: {
         latitud: {
             type: Number,
@@ -68,8 +88,19 @@ export const CraneRequestSchema = new Schema<ICraneRequest>({
             required: true,
         },
     },
+    ubicacionActualDriver: {
+        latitud: {
+            type: Number,
+            required: false,
+        },
+        longitud: {
+            type: Number,
+            required: false,
+        },
+    },
+
     total: {
-        type: String,
+        type: Number,
         required: true,
     },
     fechaInicio: {
@@ -86,6 +117,10 @@ export const CraneRequestSchema = new Schema<ICraneRequest>({
     },
     tiempoLlegada: {
         type: String,
+        required: false,
+    },
+    tiempoRutaCliente: {
+        type: String,
         required: true,
     },
     direccionRecogida: {
@@ -99,7 +134,7 @@ export const CraneRequestSchema = new Schema<ICraneRequest>({
     driverComenzoViaje: {
         type: Date,
         default: null,
-      },
+    },
     driverLlegoRecogerVehiculo: {
         type: Date,
         default: null,
@@ -108,8 +143,25 @@ export const CraneRequestSchema = new Schema<ICraneRequest>({
         type: Date,
         default: null,
     },
+    // tipoVehiculo: {
+    //     type: String,
+    //     required: true,
+    // },
+    patente: {
+        type: String,
+        required: true,
+    },
     vehicleIncidentPhotosId: {
         type: Schema.Types.ObjectId,  // Asegúrate de que esté definido así
         ref: 'VehicleIncidentPhoto',
     },
+    vehicleClientImageUrl: {
+        type: String,
+        required: true,
+    },
+
+    evaluationId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Evaluation',  // Referencia a la evaluación
+      },
 });

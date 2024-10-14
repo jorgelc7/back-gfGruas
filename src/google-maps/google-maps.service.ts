@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Client } from '@googlemaps/google-maps-services-js';
-
+import axios from 'axios';
 @Injectable()
-export class GoogleMapsService {
+export class MapsService {
   private client: Client;
 
   constructor() {
@@ -33,5 +33,55 @@ export class GoogleMapsService {
       },
     });
     return response.data.results[0]?.formatted_address || 'Address not found';
+  }
+
+  private readonly photonUrl = 'https://photon.gfgruas.cl/reverse';
+
+  async reverseGeocode(lat: number, lon: number): Promise<string> {
+    try {
+      const response = await axios.get(this.photonUrl, {
+        params: {
+          lat,
+          lon,
+          limit: 1,
+        },
+        headers: {
+          'User-Agent': 'MiAppGruas/1.0', // Asegúrate de personalizar el User-Agent
+        },
+      });
+
+      if (response.data && response.data.features && response.data.features.length > 0) {
+        const feature = response.data.features[0];
+        const properties = feature.properties;
+    
+        // Extraer los campos necesarios
+        const name = properties.name || '';
+        const street = properties.street || '';
+        const district = properties.district || '';
+        const city = properties.city || properties.locality || '';
+        const state = properties.state || '';
+        const country = properties.country || '';
+    
+        // Construir la dirección legible
+        let address = '';
+    
+        if (street) {
+            address = `${street}, ${district}, ${city}`;
+        } else if (name) {
+            address = `${name}, ${district}, ${city}`;
+        } else {
+            address = `${district}, ${city}`;
+        }
+    
+        console.log('Dirección obtenida para el usuario:', address);
+    
+        return address;
+      } else {
+        return 'Dirección no encontrada';
+      }
+    } catch (error) {
+      console.error('Error en reverseGeocode:', error);
+      throw new Error('Error al obtener la dirección');
+    }
   }
 }

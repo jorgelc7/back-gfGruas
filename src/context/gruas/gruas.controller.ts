@@ -9,6 +9,7 @@ export class GruasController {
 
   @Post()
   create(@Body() createGruaDto: CreateGruaDto) {
+    console.log("nnjnjknknk")
     try {
       return this.gruasService.create(createGruaDto);
 

@@ -13,7 +13,7 @@ export class GruasService {
 
 
   async create(createGruaDto: CreateGruaDto) {
-
+console.log("nnjnjknknk")
     try {
       const newGrua = new this.gruasModel(createGruaDto);
       return await newGrua.save();

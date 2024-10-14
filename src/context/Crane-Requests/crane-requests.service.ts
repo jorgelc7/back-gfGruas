@@ -1,43 +1,30 @@
-import { Injectable, HttpStatus, HttpException, NotFoundException } from '@nestjs/common';
+import { Injectable, HttpStatus, HttpException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { ICraneRequest } from './entities/crane-requests.entity';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateCraneRequestsDto } from './dto/create-crane-requests.dto';
 import { UpdateCraneRequestsDto } from './dto/update-crane-requests.dto';
-import { GoogleMapsService } from 'src/google-maps/google-maps.service';
-
+import { MapsService } from 'src/google-maps/google-maps.service';
+import { HttpService } from '@nestjs/axios';
+import { IUsuario } from '../user/entities/user.entity';
+import { EstadoCraneRequest } from "../Crane-Requests/entities/crane-requests.entity"
 @Injectable()
 export class CraneRequestsService {
 
 
   constructor(
     @InjectModel('CraneRequest') private readonly servicioModel: Model<ICraneRequest>,
-    private readonly googleMapsService: GoogleMapsService
+    @InjectModel('Usuario') private readonly usuarioModel: Model<IUsuario>,
+    private readonly mapsService: MapsService,
+    private readonly httpService: HttpService
   ) { }
 
   async create(createServiceDto: CreateCraneRequestsDto): Promise<ICraneRequest> {
     try {
-      // Obtener direcciones y distancia
-      const origin = `${createServiceDto.coordenadasInicio.latitud},${createServiceDto.coordenadasInicio.longitud}`;
-      const destination = `${createServiceDto.coordenadasDestino.latitud},${createServiceDto.coordenadasDestino.longitud}`;
-
-      // Obtener direcciones y distancia
-      const directionsData = await this.googleMapsService.getDirections(origin, destination);
-      const route = directionsData.routes[0];
-      const distanceText = route.legs[0].distance.text;
-      const durationText = route.legs[0].duration.text;
-
-      // Obtener direcciones legibles
-      const originAddress = await this.googleMapsService.getReverseGeocode(createServiceDto.coordenadasInicio.latitud.toString(), createServiceDto.coordenadasInicio.longitud.toString());
-      const destinationAddress = await this.googleMapsService.getReverseGeocode(createServiceDto.coordenadasDestino.latitud.toString(), createServiceDto.coordenadasDestino.longitud.toString());
-
+      console.log('Incoming data from frontend:', createServiceDto);
       // Crear el DTO con los datos calculados
       const newServiceDto = {
         ...createServiceDto,
-        distancia: distanceText,
-        tiempoLlegada: durationText,
-        direccionRecogida: originAddress,
-        direccionEntrega: destinationAddress,
       };
 
       const newService = new this.servicioModel(newServiceDto);
@@ -49,16 +36,74 @@ export class CraneRequestsService {
   }
 
 
-  private calculateCost(distanceValue: number, durationValue: number): number {
-    // Ejemplo simple de cálculo de costo
-    const costPerKm = 1; // Ejemplo de costo por kilómetro
-    const costPerMinute = 0.1; // Ejemplo de costo por minuto
+  async getRouteData(startLat: number, startLon: number, endLat: number, endLon: number, userId: string) {
+    const osrmUrl = `https://osm.gfgruas.cl/route/v1/driving/${startLon},${startLat};${endLon},${endLat}?overview=false&geometries=geojson`;
 
-    const distanceInKm = distanceValue / 1000;
-    const durationInMinutes = durationValue / 60;
+    try {
+      const { data } = await this.httpService.get(osrmUrl).toPromise();
+      if (!data || !data.routes || data.routes.length === 0) {
+        throw new InternalServerErrorException('No route data available');
+      }
 
-    return (distanceInKm * costPerKm) + (durationInMinutes * costPerMinute);
+      const route = data.routes[0];
+      const leg = route.legs[0];
+
+      // Obtener los nombres de los puntos de inicio y destino
+      const [direccionRecogida, direccionEntrega, user] = await Promise.all([
+        this.getLocationName(startLat, startLon),
+        this.getLocationName(endLat, endLon),
+        this.findOneUser(userId) // Obtener usuario por ID
+      ]);
+
+      return [{
+        direccionRecogida,
+        direccionEntrega,
+        distancia: this.formatDistance(leg.distance),
+        duration: this.formatDuration(leg.duration),
+        distanceValue: leg.distance,
+        tiempoRutaCliente: this.formatDuration(leg.duration),
+        usuario: user // Incluir usuario en la respuesta
+      }];
+
+    } catch (error) {
+      throw new InternalServerErrorException(`Error fetching route data: ${error.message}`);
+    }
   }
+  async findOneUser(id: string): Promise<IUsuario> {
+    const user = await this.usuarioModel.findById(id).exec();
+    console.log("Usuario encontrado:", user);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    return user;
+  }
+  private async getLocationName(lat: number, lon: number): Promise<string> {
+    const photonUrl = `https://photon.gfgruas.cl/reverse?lat=${lat}&lon=${lon}`;
+    try {
+      const { data } = await this.httpService.get(photonUrl).toPromise();
+
+      // Extraer el nombre del lugar desde las propiedades
+      if (data.features && data.features.length > 0) {
+        const properties = data.features[0].properties;
+        return `${properties.name}, ${properties.city}, ${properties.state}, ${properties.country}`;
+      }
+
+      return 'Unknown location';
+    } catch (error) {
+      throw new InternalServerErrorException(`Error fetching location name: ${error.message}`);
+    }
+  }
+
+  private formatDistance(distance: number): string {
+    return `${(distance / 1000).toFixed(2)} km`;
+  }
+
+  private formatDuration(duration: number): string {
+    const hours = Math.floor(duration / 3600);
+    const minutes = Math.floor((duration % 3600) / 60);
+    return `${hours > 0 ? `${hours}h ` : ''}${minutes}m`;
+  }
+
 
   async findAll(): Promise<ICraneRequest[]> {
     try {
@@ -82,7 +127,13 @@ export class CraneRequestsService {
       throw new HttpException('Error fetching service', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
-
+  // Método para obtener las solicitudes activas de un usuario
+  async findActiveRequestByUserId(clienteId: string) {
+    return await this.servicioModel.findOne({
+      clienteId,
+      estado: { $nin: [EstadoCraneRequest.CANCELADO, EstadoCraneRequest.CANCELADO] }
+    }).exec();
+  }
   async findServiceCoordinatesByDriver(driverId: string): Promise<{ latitud: number, longitud: number }> {
     try {
       // Buscar servicio activo por driverId y estado
@@ -148,7 +199,7 @@ export class CraneRequestsService {
       } else if (estado === 'COMPLETADO') {
         updateData['driverCompletoServicio'] = new Date();
       }
-      
+
       console.log("kk", rest, "1el estadoes: ", estado)
       // Actualizar el servicio en la base de datos
       const updatedService = await this.servicioModel.findByIdAndUpdate(
